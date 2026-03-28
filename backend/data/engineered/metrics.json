@@ -1,0 +1,46 @@
+{
+  "r2_score": 0.9966872354828742,
+  "mae": 4034.611825810906,
+  "leaderboard": [
+    {
+      "model_name": "Lasso",
+      "score": 0.996308414860158
+    },
+    {
+      "model_name": "LinearRegression",
+      "score": 0.9963041787859357
+    },
+    {
+      "model_name": "Ridge",
+      "score": 0.996211850252424
+    },
+    {
+      "model_name": "GradientBoosting",
+      "score": 0.9914031560494182
+    },
+    {
+      "model_name": "RandomForest",
+      "score": 0.9901999192335396
+    },
+    {
+      "model_name": "DecisionTree",
+      "score": 0.9831935948826395
+    },
+    {
+      "model_name": "KNeighbors",
+      "score": 0.9707519087816887
+    },
+    {
+      "model_name": "AdaBoost",
+      "score": 0.9574928799614646
+    },
+    {
+      "model_name": "ElasticNet",
+      "score": 0.9529593795025602
+    },
+    {
+      "model_name": "SVR",
+      "score": 0.00041270076124479973
+    }
+  ]
+}

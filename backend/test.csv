@@ -1,0 +1,6 @@
+id,name,age,income,category
+1,Alice,30,50000.0,A
+2,Bob,,60000.0,B
+3,Charlie,25,,A
+4,David,35,70000.0,
+5,Eve,40,80000.0,B

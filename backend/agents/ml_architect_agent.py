@@ -16,53 +16,58 @@ def run_ml_architect(state: AgentState) -> dict:
         
     prompt = f"""
 You are the Mistral 675B model, an elite ML Architect for SyndicateML. Your reasoning is elite and you are obsessed with model performance.
-Your task is to write a production-grade, optimized Python script.
-
-CRITICAL: You MUST ONLY use Machine Learning algorithms available in 'scikit-learn' (e.g., RandomForestRegressor). You are STRICTLY FORBIDDEN from using 'xgboost' or 'lightgbm'. The execution sandbox does not have these libraries installed.
+Your task is to write a production-grade, optimized Python script for automated machine learning.
 
 Dataset Location: '/app/data/engineered/engineered_data.csv'
 Data Profile: {data_profile}
 
-Write a robust script that:
-1. Load the CSV data using pandas. CRITICAL: This is the engineered dataset. DO NOT validate its columns, and DO NOT hardcode any column names. Right after loading `df`, you MUST EXACTLY inject this code:
-```python
-import numpy as np
-import warnings
-warnings.filterwarnings('ignore')
-# Handle infinities
-df.replace([np.inf, -np.inf], np.nan, inplace=True)
-df.fillna(df.mean(), inplace=True)
-print("Handled invalid values and missing data.")
+Write a robust script that follows this architecture:
 
-# Dynamically fetch target column from state
-target_col = "{state.get('target_column')}"
+1. Data Loading & Target Selection:
+   - Load the CSV.
+   - Print `df.columns.tolist()` for clear debugging.
+   - Detect Target:
+     - Priority 1: Use '{state.get('target_column')}' (case-insensitive search).
+     - Priority 2: Look for common target keywords: 'price', 'target', 'label', 'class', 'prediction'.
+     - Priority 3: Default to the LAST column.
+   - Task Detection: Determine if it's Classification (discrete targets) or Regression (continuous targets).
 
-# If somehow not in state, fallback to the last column
-if target_col == "None" or target_col not in df.columns:
-    target_col = df.columns[-1]
+2. Preprocessing & Splitting:
+   - Handle Infinities/NaNs.
+   - High-Dimensionality Check: If features > 100, use PCA (n_components=0.95). 
+     CRITICAL: `fit_transform()` returns a SINGLE value (the transformed array). DO NOT attempt to unpack it into multiple variables.
+   - For Classification: Use LabelEncoder on Target. Compute class weights if imbalanced.
+   - Split 80/20 with random_state=42.
 
-# Safely split features and target
-y = df[target_col]
-X = df.drop(columns=[target_col])
+3. Elite Model Competition (LazyPredict):
+   - Use `LazyClassifier` for classification or `LazyRegressor` for regression.
+   - CRITICAL: `clf.fit()` returns exactly TWO items: (models, predictions).
+   - Sort models by 'Accuracy' (Classification) or 'R-Squared' (Regression).
 
-# Enforce PII & Text Drop
-X = X.select_dtypes(include=['number'])
-```
-2. You MUST explicitly patch any remaining missing values in X (e.g., `X = X.fillna(X.median())` or `SimpleImputer`).
-3. Splits the data into Train/Test sets (80/20) with a fixed random seed for reproducibility using the safe `X` and `y`.
-4. Perform an 'Elite Model Competition': Compare different models from scikit-learn using 5-fold cross-validation.
-5. Select the absolute best performer based on precision-recall curves or R2 scores.
-6. Train the best model on the training set, then calculate Mean Absolute Error (MAE) and other relevant metrics.
-8. Save the evaluation metrics as a JSON dictionary to '/app/data/engineered/metrics.json'.
-   It MUST contain:
-   - 'accuracy' or 'r2_score' (max 1.0)
-   - 'mae'
-   - 'leaderboard' (an array of dictionaries, each with 'model_name' and 'score') representing all evaluated models and their CV scores.
-8. Saves the winning trained model using joblib to '/app/data/models/trained_model.pkl'.
+4. Best Model Training & Evaluation:
+   - CRITICAL: To retrain the best model, use a robust mapping from LazyPredict names to sklearn/xgboost/lightgbm/catboost classes.
+   - Example Mapping: 'XGBRegressor' -> `xgb.XGBRegressor`, 'LGBMRegressor' -> `lightgbm.LGBMRegressor`, 'LassoCV' -> `sklearn.linear_model.LassoCV`.
+   - Loop through the leaderboard and try to instantiate/train until one succeeds.
+   - If Classification: Use the computed `class_weight` if available.
+   - Calculate performance metrics:
+     - Classification: Accuracy, Precision, Recall, F1, Confusion Matrix.
+     - Regression: R-Squared, MAE, MSE, RMSE.
+
+5. Production Artifacts (MUST EXACTLY FOLLOW THIS):
+   - Save eval metrics to '/app/data/engineered/metrics.json'.
+     - MUST contain: 'accuracy' (or 'r2_score'), 'mae', 'leaderboard' (array of {{'model_name', 'score'}}), and 'model_file_base64'.
+     - CRITICAL: When building 'leaderboard' from the LazyPredict DataFrame (`models`), use:
+       `leaderboard = [{{'model_name': str(idx), 'score': float(row.iloc[0])}} for idx, row in models.iterrows()]`
+       NEVER pass a Series to `float()`. Cast all metrics to standard Python types.
+   - Save the winning model using joblib to '/app/data/models/trained_model.pkl'.
+   - Read the .pkl file in binary mode, encode to base64, and inject into the metrics.json.
 
 Ensure the script:
-- Creates required directories if they don't exist.
-- Contains NO markdown formatting, JUST production-ready, highly-commented Python code.
+- Creates required directories.
+- Handles missing libraries or instantiation failures gracefully.
+- Contains NO markdown formatting OUTSIDE the code block.
+- OUTPUT ONLY the Python code inside a single ```python block.
+- NO PREAMBLE. NO EXPLANATION. NO CONCLUSION.
 """
     try:
         import os
@@ -80,8 +85,18 @@ Ensure the script:
                     continue
                 raise e
         
-        # Clean up output
-        code = response.content.replace("```python", "").replace("```", "").strip()
+        # Clean up output using a more robust regex to extract ONLY the code block if present
+        import re
+        code_match = re.search(r"```python\n(.*?)\n```", response.content, re.DOTALL)
+        if not code_match:
+            code_match = re.search(r"```\n(.*?)\n```", response.content, re.DOTALL)
+        
+        if code_match:
+            code = code_match.group(1).strip()
+        else:
+            # Fallback: remove markdown markers manually and strip
+            code = response.content.replace("```python", "").replace("```", "").strip()
+            
         code = "import warnings; warnings.simplefilter(action='ignore', category=FutureWarning); warnings.simplefilter(action='ignore', category=UserWarning)\n" + code
         
         # Add a tiny bit of token estimation

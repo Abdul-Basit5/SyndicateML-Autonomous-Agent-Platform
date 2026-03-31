@@ -40,6 +40,7 @@ export default function App() {
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [modelBase64, setModelBase64] = useState(null);
   const [threadId, setThreadId] = useState(`session_${Math.random().toString(36).substr(2, 9)}`);
 
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -226,6 +227,7 @@ export default function App() {
             if (message.model_metrics) setModelMetrics(message.model_metrics);
             if (message.xai_report) setXaiReport(message.xai_report);
             if (message.target_column) setTargetColumn(message.target_column);
+            if (message.model_file_base64) setModelBase64(message.model_file_base64);
             if (message.deployment_status !== undefined) setDeploymentStatus(message.deployment_status);
             if (message.node === 'privacy_shield') setPrivacyActive(true);
           }
@@ -330,6 +332,25 @@ export default function App() {
     }
   };
 
+  const downloadModel = () => {
+    if (!modelBase64) return;
+    const byteCharacters = atob(modelBase64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'syndicateml_trained_model.pkl';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (!token) {
     return (
       <div className="min-h-screen bg-[#020617] mesh-gradient flex items-center justify-center p-4 font-sans text-slate-200">
@@ -355,8 +376,8 @@ export default function App() {
               {isLoggingIn ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Zap className="w-5 h-5" /> Initialize Core</>}
             </button>
           </form>
-          <div className="mt-10 text-center opacity-30">
-            <p className="text-[9px] font-bold tracking-[0.4em] uppercase">Secure Defense Protocol 2026-X</p>
+          <div className="mt-10 text-center">
+            <p className="text-[9px] font-black tracking-[0.4em] uppercase bg-gradient-to-r from-emerald-400 via-white to-emerald-400 bg-clip-text text-transparent opacity-80 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] animate-pulse-slow">SECURE DEFENSE PROTOCOL 2026-X | Abdul Basit - ML Engineer</p>
           </div>
         </motion.div>
       </div>
@@ -568,31 +589,43 @@ export default function App() {
                       </div>
                     ) : (
                       <div className="space-y-8 overflow-y-auto pr-2">
+                        {modelBase64 && (
+                          <motion.button
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            onClick={downloadModel}
+                            className="w-full py-4 mb-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 font-bold rounded-2xl border border-emerald-500/30 transition-all active:scale-95 flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.1)] group"
+                          >
+                            <Download className="w-5 h-5 group-hover:animate-bounce" /> 📥 Download Trained Model (.pkl)
+                          </motion.button>
+                        )}
                         {modelMetrics && (
                           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 gap-4">
-                            {Object.entries(modelMetrics).map(([k, v]) => (
-                              <div key={k} className="bg-slate-950/40 border border-white/5 p-6 rounded-[24px] relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity">
-                                  <ChartIcon className="w-4 h-4 text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                            {Object.entries(modelMetrics)
+                              .filter(([k]) => !['leaderboard', 'model_file_base64', 'model_base_4', 'model_base64'].includes(k))
+                              .map(([k, v]) => (
+                                <div key={k} className="bg-slate-950/40 border border-white/5 p-6 rounded-[24px] relative overflow-hidden group">
+                                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity">
+                                    <ChartIcon className="w-4 h-4 text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">{k.replace(/_/g, ' ')}</p>
+                                    {(k.toLowerCase() === 'rmse' || k.toLowerCase() === 'mae') && (
+                                      <p className="text-[8px] text-emerald-500/60 uppercase tracking-widest mb-2 font-mono">Deviation from Mean Price</p>
+                                    )}
+                                    {!(k.toLowerCase() === 'rmse' || k.toLowerCase() === 'mae') && <div className="mb-2" />}
+                                  </div>
+                                  <p className={`font-bold text-white tracking-tighter ${String(v).length > 20 ? 'text-lg leading-tight' : 'text-3xl'}`}>
+                                    {typeof v === 'number'
+                                      ? v.toFixed(4)
+                                      : Array.isArray(v) && k !== 'leaderboard'
+                                        ? v.join(', ')
+                                        : (typeof v === 'object' && v !== null && k !== 'leaderboard'
+                                          ? JSON.stringify(v)
+                                          : k !== 'leaderboard' ? v : '...')}
+                                  </p>
                                 </div>
-                                <div>
-                                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">{k.replace(/_/g, ' ')}</p>
-                                  {(k.toLowerCase() === 'rmse' || k.toLowerCase() === 'mae') && (
-                                    <p className="text-[8px] text-emerald-500/60 uppercase tracking-widest mb-2 font-mono">Deviation from Mean Price</p>
-                                  )}
-                                  {!(k.toLowerCase() === 'rmse' || k.toLowerCase() === 'mae') && <div className="mb-2" />}
-                                </div>
-                                <p className={`font-bold text-white tracking-tighter ${String(v).length > 20 ? 'text-lg leading-tight' : 'text-3xl'}`}>
-                                  {typeof v === 'number'
-                                    ? v.toFixed(4)
-                                    : Array.isArray(v) && k !== 'leaderboard'
-                                      ? v.join(', ')
-                                      : (typeof v === 'object' && v !== null && k !== 'leaderboard'
-                                        ? JSON.stringify(v)
-                                        : k !== 'leaderboard' ? v : '...')}
-                                </p>
-                              </div>
-                            )).filter(item => item !== null && item.key !== 'leaderboard')}
+                              ))}
                           </motion.div>
                         )}
                         {xaiReport && Object.keys(xaiReport).filter(k => typeof xaiReport[k] === 'number').length > 0 && (() => {
@@ -646,20 +679,23 @@ export default function App() {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {modelMetrics.leaderboard.map((model, idx) => (
-                                    <tr key={idx} className={`border-b border-white/5 transition-colors ${idx === 0 ? 'bg-emerald-500/10' : 'hover:bg-slate-800/50'}`}>
-                                      <td className="py-3 px-4 text-center">
-                                        {idx === 0 ? <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center mx-auto shadow-[0_0_10px_rgba(16,185,129,0.5)]"><span className="text-[10px] font-bold text-slate-950">1</span></div> : <span className="text-slate-500 font-mono">{idx + 1}</span>}
-                                      </td>
-                                      <td className={`py-3 px-4 font-bold tracking-tight ${idx === 0 ? 'text-emerald-400' : 'text-slate-300'}`}>
-                                        {model.model_name}
-                                        {idx === 0 && <span className="ml-3 text-[8px] uppercase tracking-widest border border-emerald-500/30 px-2 py-0.5 rounded-full text-emerald-500">Deploying</span>}
-                                      </td>
-                                      <td className="py-3 px-4 font-mono text-emerald-400 text-right">
-                                        {(model.score * 100).toFixed(2)}%
-                                      </td>
-                                    </tr>
-                                  ))}
+                                  {[...modelMetrics.leaderboard]
+                                    .sort((a, b) => b.score - a.score)
+                                    .slice(0, 10)
+                                    .map((model, idx) => (
+                                      <tr key={idx} className={`border-b border-white/5 transition-colors ${idx === 0 ? 'bg-emerald-500/10' : 'hover:bg-slate-800/50'}`}>
+                                        <td className="py-3 px-4 text-center">
+                                          {idx === 0 ? <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center mx-auto shadow-[0_0_10px_rgba(16,185,129,0.5)]"><span className="text-[10px] font-bold text-slate-950">1</span></div> : <span className="text-slate-500 font-mono">{idx + 1}</span>}
+                                        </td>
+                                        <td className={`py-3 px-4 font-bold tracking-tight ${idx === 0 ? 'text-emerald-400' : 'text-slate-300'}`}>
+                                          {model.model_name}
+                                          {idx === 0 && <span className="ml-3 text-[8px] uppercase tracking-widest border border-emerald-500/30 px-2 py-0.5 rounded-full text-emerald-500">Deploying</span>}
+                                        </td>
+                                        <td className="py-3 px-4 font-mono text-emerald-400 text-right">
+                                          {(model.score * 100).toFixed(2)}%
+                                        </td>
+                                      </tr>
+                                    ))}
                                 </tbody>
                               </table>
                             </div>

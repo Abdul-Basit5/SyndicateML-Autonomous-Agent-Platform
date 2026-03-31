@@ -173,6 +173,7 @@ async def websocket_stream(websocket: WebSocket, token: str = None):
                             "xai_report": output.get("xai_report"),
                             "data_profile": output.get("data_profile"),
                             "target_column": current_full_state.values.get("target_column", "Target"),
+                            "model_file_base64": current_full_state.values.get("model_file_base64"),
                             "status": "active"
                         })
                         await asyncio.sleep(0.5)
@@ -197,7 +198,8 @@ async def websocket_stream(websocket: WebSocket, token: str = None):
                             "accuracy": accuracy,
                             "cost": state.values.get("total_token_cost", 0.0),
                             "xai_report": state.values.get("xai_report", {}),
-                            "triage_status": status_str
+                            "triage_status": status_str,
+                            "model_file_base64": state.values.get("model_file_base64")
                         })
                     else:
                         await websocket.send_json({"type": "PIPELINE_COMPLETE", "status": "done"})

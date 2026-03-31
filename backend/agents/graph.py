@@ -40,7 +40,6 @@ def triage_deployment(state: AgentState):
     """
     HITL Triage Logic: Check accuracy and decide if human approval is needed.
     """
-    from utils.notifier import send_whatsapp_alert
     
     metrics = state.get("model_metrics", {})
     final_r2_score = float(metrics.get("accuracy", metrics.get("r2_score", 0.0)))
@@ -56,7 +55,6 @@ def triage_deployment(state: AgentState):
             f"Current Accuracy: {final_r2_score*100:.1f}%.\n"
             f"Pipeline paused. Human intervention required immediately."
         )
-        send_whatsapp_alert(escalation)
         
         state["agent_logs"].append(f"✅ STATUS: MODEL APPROVED. R2 {final_r2_score*100:.1f}% exceeds enterprise threshold. Routing to deployment.")
         return "REQUIRES_APPROVAL"

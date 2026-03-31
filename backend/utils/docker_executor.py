@@ -77,6 +77,7 @@ def execute_sandbox_code(state: AgentState) -> dict:
         # Format logs cleanly
         if is_architect:
             winning_model = "Unknown"
+            model_file_base64 = None
             if os.path.exists("data/engineered/metrics.json"):
                 import json
                 try:
@@ -84,18 +85,25 @@ def execute_sandbox_code(state: AgentState) -> dict:
                         metrics_data = json.load(f)
                         if "leaderboard" in metrics_data and len(metrics_data["leaderboard"]) > 0:
                             winning_model = metrics_data["leaderboard"][0]["model_name"]
+                        model_file_base64 = metrics_data.get("model_file_base64")
                 except:
                     pass
             agent_log_output = f"[ML Architect] → Selected Winning Model: {winning_model}"
+            return {
+                "execution_error": None,
+                "agent_logs": [agent_log_output],
+                "engineered_dataset_path": state.get("engineered_dataset_path"),
+                "current_active_agent": "ML Architect Done",
+                "model_file_base64": model_file_base64
+            }
         else:
             agent_log_output = f"[Sandbox] → Execution Output: {logs[:100].strip()}..."
-
-        return {
-            "execution_error": None,
-            "agent_logs": [agent_log_output],
-            "engineered_dataset_path": "data/engineered/engineered_data.csv" if not is_architect else state.get("engineered_dataset_path"),
-            "current_active_agent": "ML Architect Done" if is_architect else "Feature Engineer Done"
-        }
+            return {
+                "execution_error": None,
+                "agent_logs": [agent_log_output],
+                "engineered_dataset_path": "data/engineered/engineered_data.csv",
+                "current_active_agent": "Feature Engineer Done"
+            }
     except docker.errors.ContainerError as e:
         error_log = e.stderr.decode('utf-8') if e.stderr else str(e)
         logger.error(f"Sandbox Execution Traceback: {error_log}")

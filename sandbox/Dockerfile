@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM sandbox-env
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -11,12 +11,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Data Science tools
-RUN pip install --no-cache-dir \
+RUN pip install --no-cache-dir --default-timeout=1000 \
     pandas \
     numpy \
+    pyarrow \
     scikit-learn \
     scipy \
     joblib \
+    lazypredict \
+    sentence-transformers \
     xgboost \
     lightgbm \
     catboost \

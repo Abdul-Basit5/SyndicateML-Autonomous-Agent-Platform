@@ -10,5 +10,7 @@ pydantic
 python-multipart
 python-jose[cryptography]
 passlib[bcrypt]
-twilio
 reportlab
+lazypredict
+scikit-learn
+joblib

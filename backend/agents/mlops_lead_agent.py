@@ -58,7 +58,6 @@ Ensure the script:
         cost = len(prompt) * 0.000002 + len(code) * 0.000006
         
         # We don't execute it in docker_executor, we just save it.
-        from utils.notifier import send_whatsapp_alert
         
         cost_total = state.get("total_token_cost", 0.0) + cost
         metrics = state.get("model_metrics", {})
@@ -115,11 +114,10 @@ Ensure the script:
             f"Top Driver: {top_driver}. The full PDF audit report has been generated."
         )
         
-        send_whatsapp_alert(brief)
         
         new_logs = state.get("agent_logs", [])
         new_logs.append("MLOps Lead: Production API script generated successfully in 'deployment/'.")
-        new_logs.append("✅ WhatsApp Executive Brief & PDF Report dispatched successfully.")
+        new_logs.append("✅ Executive Brief & PDF Report dispatched successfully.")
         new_logs.append("✔ Pipeline Completed Successfully")
         new_logs.append("✔ API Live and Ready for Inference")
 

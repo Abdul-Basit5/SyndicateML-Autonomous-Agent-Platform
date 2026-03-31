@@ -21,3 +21,4 @@ class AgentState(TypedDict):
     human_approval_required: Optional[bool]
     target_column: Optional[str]
     masked_pii_columns: list
+    model_file_base64: Optional[str]

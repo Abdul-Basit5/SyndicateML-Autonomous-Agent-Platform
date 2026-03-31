@@ -17,3 +17,11 @@ services:
     depends_on:
       - backend
     restart: always
+
+  sandbox-env:
+    build:
+      context: .
+      dockerfile: Dockerfile.sandbox
+    image: sandbox-env
+    # We don't need to run it, just ensure it's built
+    command: [ "echo", "Sandbox image built successfully" ]

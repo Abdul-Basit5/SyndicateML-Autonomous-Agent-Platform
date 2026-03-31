@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -10,5 +10,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Data Science tools
-RUN pip install --no-cache-dir pandas numpy scikit-learn joblib
+# Install Data Science tools (MINIMAL for slow networks)
+RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 pandas numpy pyarrow
+RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 scikit-learn joblib lazypredict
+RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 torch --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 --index-url https://pypi.org/simple transformers sentence-transformers nltk
+RUN python -c "import nltk; import ssl; ssl._create_default_https_context = ssl._create_unverified_context; nltk.download('stopwords', quiet=True); nltk.download('punkt', quiet=True); nltk.download('punkt_tab', quiet=True);"
+RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 xgboost lightgbm catboost

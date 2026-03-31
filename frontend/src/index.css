@@ -85,6 +85,24 @@
     }
   }
 
+  .animate-pulse-slow {
+    animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-slow {
+
+    0%,
+    100% {
+      opacity: 0.8;
+      filter: brightness(1);
+    }
+
+    50% {
+      opacity: 1;
+      filter: brightness(1.3);
+    }
+  }
+
   .terminal-text {
     @apply font-mono text-emerald-500/90 leading-relaxed;
     text-shadow: 0 0 5px rgba(16, 185, 129, 0.2);

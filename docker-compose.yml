@@ -1,0 +1,27 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./backend/data:/app/data
+    env_file:
+      - ./backend/.env
+    restart: always
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: always
+
+  sandbox-env:
+    build:
+      context: .
+      dockerfile: Dockerfile.sandbox
+    image: sandbox-env
+    # We don't need to run it, just ensure it's built
+    command: [ "echo", "Sandbox image built successfully" ]

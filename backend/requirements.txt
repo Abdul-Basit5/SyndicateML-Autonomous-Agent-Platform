@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+websockets
+langgraph
+langchain-mistralai
+docker
+pandas
+python-dotenv
+pydantic
+python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
+reportlab
+lazypredict
+scikit-learn
+joblib
